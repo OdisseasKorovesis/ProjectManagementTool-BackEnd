@@ -7,6 +7,8 @@ import com.odkor.projectmanagementtool.repositories.ProjectTaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class ProjectTaskService {
 
@@ -40,4 +42,8 @@ public class ProjectTaskService {
 
     }
 
+    public Iterable<ProjectTask> findBacklogById(String id) {
+
+        return projectTaskRepository.findByIdentifierOrderByPriority(id);
+    }
 }
