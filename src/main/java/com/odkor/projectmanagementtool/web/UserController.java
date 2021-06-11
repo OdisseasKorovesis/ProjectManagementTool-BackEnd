@@ -1,12 +1,20 @@
 package com.odkor.projectmanagementtool.web;
 
 import com.odkor.projectmanagementtool.domain.User;
+import com.odkor.projectmanagementtool.payload.LoginRequest;
+import com.odkor.projectmanagementtool.payload.LoginSuccessResponse;
+import com.odkor.projectmanagementtool.security.JwtTokenProvider;
+import com.odkor.projectmanagementtool.security.SecurityConstants;
 import com.odkor.projectmanagementtool.services.MapValidationErrorService;
 import com.odkor.projectmanagementtool.services.UserService;
 import com.odkor.projectmanagementtool.validator.UserValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,6 +35,32 @@ public class UserController {
 
     @Autowired
     private UserValidator userValidator;
+
+    @Autowired
+    private JwtTokenProvider tokenProvider;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest, BindingResult result) {
+        ResponseEntity<?> errorMap = mapValidationErrorService.produceErrorMap(result);
+        if(errorMap != null) {
+            return errorMap;
+        }
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getUsername(),
+                        loginRequest.getPassword()
+                )
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = SecurityConstants.TOKEN_PREFIX + tokenProvider.generateToken(authentication);
+
+        return ResponseEntity.ok(new LoginSuccessResponse(true, jwt));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody User user, BindingResult result) {
